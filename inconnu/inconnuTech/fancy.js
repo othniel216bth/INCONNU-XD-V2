@@ -33,44 +33,62 @@ const fancyStyles = [
   ['👑 𝔅𝔬𝔫𝔧𝔬𝔲𝔯 👑', 'Style 30'],
 ];
 
+// Mot de base pour correspondance lettre par lettre
+const baseWord = 'bonjour';
+
+function stylizeText(text, style) {
+  // tableau des lettres stylisées du style
+  const styleLetters = [...style];
+  const baseLetters = [...baseWord];
+
+  return [...text].map(char => {
+    const lower = char.toLowerCase();
+    const pos = baseLetters.indexOf(lower);
+    if (pos !== -1) return styleLetters[pos] || char;
+    return char; // lettre non dans "bonjour" reste inchangée
+  }).join('');
+}
+
 const fancy = async (m, sock) => {
   const prefix = config.PREFIX;
-  const cmd = m.body.startsWith(prefix)
-    ? m.body.slice(prefix.length).split(' ')[0].toLowerCase()
-    : '';
-  const args = m.body.trim().split(/\s+/).slice(1);
+  const body = m.body.trim();
+  if (!body.startsWith(prefix)) return;
+
+  const args = body.slice(prefix.length).split(/\s+/);
+  const cmd = args.shift().toLowerCase();
 
   if (!['fancy', 'style'].includes(cmd)) return;
 
   let index = null;
   let text = '';
 
-  // Example: .fancy 10 INCONNU XD
-  if (!isNaN(args[0])) {
+  if (args.length === 0) {
+    text = 'INCONNU XD V2';
+  } else if (!isNaN(args[0])) {
     index = parseInt(args[0]) - 1;
     text = args.slice(1).join(' ');
   } else {
     text = args.join(' ');
   }
 
-  if (!text) text = 'INCONNU XD V2';
-
   if (index !== null) {
     if (index < 0 || index >= fancyStyles.length) {
       return sock.sendMessage(m.from, {
-        text: `❌ Style number *${index + 1}* is not available. Please choose a number between *1 and ${fancyStyles.length}*.`,
+        text: `❌ Style number *${index + 1}* is not available. Please choose between 1 and ${fancyStyles.length}.`,
       }, { quoted: m });
     }
 
     const [style, name] = fancyStyles[index];
-    const styledText = style.replace(/Bonjour/gi, text);
+    const styledText = stylizeText(text, style);
+
     return sock.sendMessage(m.from, {
       text: `🎨 *${name}*\n\n${styledText}\n\n> MADE IN BY INCONNU BOY`,
     }, { quoted: m });
   }
 
+  // Affiche tous les styles appliqués au texte si pas d'index
   const allStyles = fancyStyles
-    .map(([style, name], i) => `*${i + 1}.* ${style.replace(/Bonjour/gi, text)}`)
+    .map(([style, name], i) => `*${i + 1}.* ${stylizeText(text, style)}`)
     .join('\n\n');
 
   await sock.sendMessage(m.from, {
@@ -79,4 +97,3 @@ const fancy = async (m, sock) => {
 };
 
 export default fancy;
-    
